@@ -1,0 +1,9 @@
+[package]
+name = "max32655-hal"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+max32655_pac = {path = "../max32655_pac"}

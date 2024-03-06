@@ -1,0 +1,15 @@
+[package]
+name = "max32655_pac"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+critical-section = { version = "1.1", optional =  true}
+cortex-m = "0.7.6"
+cortex-m-rt = "*"
+vcell = "0.1.2"
+
+[features]
+rt = ["cortex-m-rt/device"]

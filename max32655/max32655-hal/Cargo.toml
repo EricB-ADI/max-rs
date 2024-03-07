@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 max32655_pac = {path = "../max32655_pac"}
+cortex-m = { version = "0.7.6", features = ["critical-section-single-core"]}

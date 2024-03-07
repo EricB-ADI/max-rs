@@ -27,6 +27,9 @@ pub enum PeriphClock {
     WDT0,
     CPU1,
 }
+
+
+
 enum PclkDisBankOption {
     Bank0,
     Bank1,
@@ -74,6 +77,10 @@ impl PeriphClock {
     }
 }
 
+fn steal_gcr() -> pac::GCR{
+    unsafe{pac::Peripherals::steal().GCR}
+}
+
 pub fn periph_clock_disable(clk: PeriphClock) {
     let pclk = clk.values();
     let gcr = unsafe{pac::Peripherals::steal().GCR};
@@ -114,6 +121,40 @@ pub fn periph_clock_is_enabled(clk: PeriphClock) -> bool {
 
 pub fn get_revision() -> u32
 {
-    let gcr = unsafe{pac::Peripherals::steal().GCR};
+    let gcr = steal_gcr();
     return gcr.revision.read().bits();
+}
+
+pub enum CoreClockSource{
+    ISO,
+    Reserved,
+    ERFO,
+    INRO,
+    IPO,
+    IBRO, 
+    ERTCO,
+    EXTCLK,
+}
+
+pub fn get_clock_source() -> CoreClockSource{
+    let gcr = steal_gcr();
+
+    use CoreClockSource as src;
+
+    match gcr.clkctrl.read().sysclk_sel().bits(){
+        0 => src::ISO,
+        1 => src::Reserved,
+        2 => src::ERFO,
+        3 => src::INRO,
+        4 => src::IPO,
+        5 => src::IBRO,
+        6 => src::ERTCO,
+        7 => src::EXTCLK,
+        _ => src::ISO
+    } 
+
+}
+pub fn get_sys_clk_divider() ->u8
+{
+    steal_gcr().clkctrl.read().sysclk_div().bits()
 }

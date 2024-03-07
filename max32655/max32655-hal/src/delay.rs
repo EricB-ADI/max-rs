@@ -26,19 +26,15 @@
 //         Sys::CoreClockSource::ERFO => 32_000_000,
 //         Sys::CoreClockSource::INRO => ,
 //         Sys::CoreClockSource::IPO => 100_000_000,
-//         Sys::CoreClockSource::IBRO => 7_372_800, 
+//         Sys::CoreClockSource::IBRO => 7_372_800,
 //         Sys::CoreClockSource::ERTCO => ,
 //         Sys::CoreClockSource::EXTCLK => ,
 //     }
-
 
 //     let sys_div = Sys::get_sys_clk_divider();
 
 //     let base:u32 = 2;
 //     let clk_f:u32 = freq / base.pow(sys_div as u32);
-
-     
-
 
 // }
 // pub fn delay_ms(msec: u32)

@@ -8,6 +8,5 @@ pub use gpio as GPIO;
 pub mod sys;
 pub use sys as Sys;
 
-
 pub mod delay;
 pub use delay as Delay;

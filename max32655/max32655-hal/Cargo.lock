@@ -71,6 +71,7 @@ name = "max32655-hal"
 version = "0.1.0"
 dependencies = [
  "cortex-m",
+ "embedded-hal",
  "max32655_pac",
 ]
 

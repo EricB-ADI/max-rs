@@ -10,13 +10,9 @@ pub trait Gpio {
     fn is_low(&self, pin: u32) -> bool;
 }
 
-
-
-pub struct Port{
-    
-}
-pub enum GpioError{
-    InavlidPin
+pub struct Port {}
+pub enum GpioError {
+    InavlidPin,
 }
 
 impl Gpio for pac::GPIO0 {
@@ -28,20 +24,16 @@ impl Gpio for pac::GPIO0 {
         self.outen_set.modify(|_, w| unsafe { w.bits(pin) });
     }
 
-    fn set_input(&self, pin: u32) -> Result<(), GpioError>{
-
-        if pin > 31
-        {
+    fn set_input(&self, pin: u32) -> Result<(), GpioError> {
+        if pin > 31 {
             return Err(GpioError::InavlidPin);
         }
 
         let mask = 1 << pin;
         self.outen_clr.write(|w| unsafe { w.bits(mask) });
-        self.inten_set.write(|w| unsafe {
-            w.bits(mask)
-        });
+        self.inten_set.write(|w| unsafe { w.bits(mask) });
 
-        return Ok(());
+        Ok(())
     }
 
     fn set_high(&self, pin: u32) {

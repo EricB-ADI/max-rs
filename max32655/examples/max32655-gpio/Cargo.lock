@@ -83,8 +83,16 @@ dependencies = [
  "cortex-m",
  "cortex-m-rt",
  "cortex-m-semihosting",
+ "max32655-hal",
  "max32655_pac",
  "panic-halt",
+]
+
+[[package]]
+name = "max32655-hal"
+version = "0.1.0"
+dependencies = [
+ "max32655_pac",
 ]
 
 [[package]]

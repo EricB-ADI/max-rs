@@ -1,5 +1,5 @@
 use crate::pac;
-use crate::Sys;
+
 // use embedded_hal::digital;
 
 pub enum PortNum {
@@ -16,32 +16,26 @@ pub enum Mode {
     Output,
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub enum GpioError {
     InvalidPin,
     InvalidState,
 }
 
-
-// pub struct Gpio<T>{
-//     port : T
-// }
-
-// impl <T> Gpio<T> {
-//     pub fn new(port : PortNum)-> {
-//         Gpio{port}
-//     }
-// }
-
-
 pub trait GpioPort {
-    fn enable(&mut self, en: bool, pin: u8) -> Result<(), GpioError>;
+    
+    fn enable_output(&mut self, en: bool, pin: u8) -> Result<(), GpioError>;
+    fn enable_input(&mut self, en: bool, pin: u8) -> Result<(), GpioError>;
+
     fn set_high(&mut self, pin: u8) -> Result<(), GpioError>;
     fn set_low(&mut self, pin: u8) -> Result<(), GpioError>;
     fn read(&mut self, pin: u8) -> Result<bool, GpioError>;
 }
 
 impl GpioPort for pac::GPIO0 {
-    fn enable(&mut self, en: bool, pin: u8) -> Result<(), GpioError> {
+
+    
+    fn enable_output(&mut self, en: bool, pin: u8) -> Result<(), GpioError> {
         if pin > 31 {
             return Err(GpioError::InvalidPin);
         }
@@ -58,11 +52,46 @@ impl GpioPort for pac::GPIO0 {
 
         self
         .padctrl0
-        .modify(|r, w| unsafe { w.bits(r.bits() | (1 << pin)) });
+        .modify(|r, w| unsafe { w.bits(r.bits() & !(1 << pin)) });
         
         self
         .padctrl1
-        .modify(|r, w| unsafe { w.bits(r.bits() | (1 << pin)) });
+        .modify(|r, w| unsafe { w.bits(r.bits() & !(1 << pin)) });
+
+        Ok(())
+    }
+
+    fn enable_input(&mut self, en: bool, pin: u8) -> Result<(), GpioError> {
+        if pin > 31 {
+            return Err(GpioError::InvalidPin);
+        }
+
+        let mask = 1 << pin;
+
+        if en {
+            self.en0_set.write(|w| unsafe { w.bits(mask) });
+            self.inen.modify(|r, w| unsafe { w.bits(r.bits() | mask) });
+            
+            assert!(self.en0.read().bits() & mask != 0);
+            assert!(self.inen.read().bits() & mask != 0);
+
+        }else{
+            self.en0_clr.write(|w| unsafe { w.bits(mask) });
+            self.inen.modify(|r, w| unsafe { w.bits(r.bits() & !mask) });
+
+        }
+
+        self
+        .padctrl1
+        .modify(|r, w| unsafe { w.bits(r.bits() & !mask) });
+        
+        self
+        .padctrl0
+        .modify(|r, w| unsafe { w.bits(r.bits() | mask) });
+
+        assert!(self.padctrl0.read().bits() & mask != 0);
+        assert!(self.padctrl1.read().bits() & mask == 0);
+
 
         Ok(())
     }
@@ -90,21 +119,8 @@ impl GpioPort for pac::GPIO0 {
             return Err(GpioError::InvalidPin);
         }
 
-        Ok(self.in_.read().bits() & (1 << pin) != 0)
+        let input = (self.in_.read().bits() >> pin) & 1;
+
+        Ok(input != 0)
     }
 }
-
-
-
-// pub struct GPIO<T> {
-//     port: T,
-// }
-
-// impl<T> GPIO<T>
-// where
-//     T: GpioPort,
-// {
-//     pub fn new(port : T) -> Self {
-//         GPIO { port }
-//     }
-// }

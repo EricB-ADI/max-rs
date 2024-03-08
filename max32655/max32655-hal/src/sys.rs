@@ -148,6 +148,7 @@ pub fn get_clock_source() -> CoreClockSource {
         _ => src::ISO,
     }
 }
+
 pub fn get_sys_clk_divider() -> u8 {
     steal_gcr().clkctrl.read().sysclk_div().bits()
 }

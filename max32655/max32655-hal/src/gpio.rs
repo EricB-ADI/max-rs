@@ -23,7 +23,6 @@ pub enum GpioError {
 }
 
 pub trait GpioPort {
-    
     fn enable_output(&mut self, en: bool, pin: u8) -> Result<(), GpioError>;
     fn enable_input(&mut self, en: bool, pin: u8) -> Result<(), GpioError>;
 
@@ -33,8 +32,6 @@ pub trait GpioPort {
 }
 
 impl GpioPort for pac::GPIO0 {
-
-    
     fn enable_output(&mut self, en: bool, pin: u8) -> Result<(), GpioError> {
         if pin > 31 {
             return Err(GpioError::InvalidPin);
@@ -43,20 +40,16 @@ impl GpioPort for pac::GPIO0 {
         if en {
             self.en0_set.write(|w| unsafe { w.bits(1 << pin) });
             self.outen_set.write(|w| unsafe { w.bits(1 << pin) });
-
         } else {
             self.en0_clr.write(|w| unsafe { w.bits(1 << pin) });
             self.outen_clr.write(|w| unsafe { w.bits(1 << pin) });
         }
 
+        self.padctrl0
+            .modify(|r, w| unsafe { w.bits(r.bits() & !(1 << pin)) });
 
-        self
-        .padctrl0
-        .modify(|r, w| unsafe { w.bits(r.bits() & !(1 << pin)) });
-        
-        self
-        .padctrl1
-        .modify(|r, w| unsafe { w.bits(r.bits() & !(1 << pin)) });
+        self.padctrl1
+            .modify(|r, w| unsafe { w.bits(r.bits() & !(1 << pin)) });
 
         Ok(())
     }
@@ -71,27 +64,22 @@ impl GpioPort for pac::GPIO0 {
         if en {
             self.en0_set.write(|w| unsafe { w.bits(mask) });
             self.inen.modify(|r, w| unsafe { w.bits(r.bits() | mask) });
-            
+
             assert!(self.en0.read().bits() & mask != 0);
             assert!(self.inen.read().bits() & mask != 0);
-
-        }else{
+        } else {
             self.en0_clr.write(|w| unsafe { w.bits(mask) });
             self.inen.modify(|r, w| unsafe { w.bits(r.bits() & !mask) });
-
         }
 
-        self
-        .padctrl1
-        .modify(|r, w| unsafe { w.bits(r.bits() & !mask) });
-        
-        self
-        .padctrl0
-        .modify(|r, w| unsafe { w.bits(r.bits() | mask) });
+        self.padctrl1
+            .modify(|r, w| unsafe { w.bits(r.bits() & !mask) });
+
+        self.padctrl0
+            .modify(|r, w| unsafe { w.bits(r.bits() | mask) });
 
         assert!(self.padctrl0.read().bits() & mask != 0);
         assert!(self.padctrl1.read().bits() & mask == 0);
-
 
         Ok(())
     }

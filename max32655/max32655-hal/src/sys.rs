@@ -59,6 +59,7 @@ impl PeriphClock {
             PeriphClock::ADC => PclkDisBank::new(Bank::Bank0, 23),
             PeriphClock::I2C1 => PclkDisBank::new(Bank::Bank0, 28),
             PeriphClock::PulseTrain => PclkDisBank::new(Bank::Bank0, 29),
+
             PeriphClock::BTLE => PclkDisBank::new(Bank::Bank1, 0),
             PeriphClock::UART2 => PclkDisBank::new(Bank::Bank1, 1),
             PeriphClock::TRNG => PclkDisBank::new(Bank::Bank1, 2),

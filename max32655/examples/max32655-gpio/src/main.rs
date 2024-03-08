@@ -13,7 +13,6 @@ fn main() -> ! {
     let btn_pin: u8 = 18;
 
     let per = Peripherals::take().unwrap();
-
     let mut gpio0 = per.GPIO0;
 
     Sys::periph_clock_enable(Sys::PeriphClock::GPIO0);
@@ -23,10 +22,9 @@ fn main() -> ! {
     loop {
         let input = gpio0.read(btn_pin).unwrap();
 
-
-        if input{
+        if input {
             gpio0.set_high(led_pin).unwrap();
-        }else{
+        } else {
             gpio0.set_low(led_pin).unwrap();
         }
     }

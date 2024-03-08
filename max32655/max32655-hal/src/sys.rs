@@ -63,6 +63,7 @@ pub enum PeriphRst {
     SIMO,
     CPU1,
 }
+
 enum PclkDisBankOption {
     Bank0,
     Bank1,
@@ -235,6 +236,5 @@ pub fn periph_reset(periph: PeriphRst) {
         PeriphRst::DVS => set_bit(1, 24),
         PeriphRst::SIMO => set_bit(1, 25),
         PeriphRst::CPU1 => set_bit(1, 21),
-
     }
 }

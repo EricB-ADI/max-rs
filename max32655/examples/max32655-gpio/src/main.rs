@@ -15,7 +15,9 @@ fn main() -> ! {
     let per = Peripherals::take().unwrap();
     let mut gpio0 = per.GPIO0;
 
+    Sys::periph_reset(Sys::PeriphRst::GPIO0);
     Sys::periph_clock_enable(Sys::PeriphClock::GPIO0);
+
     gpio0.enable_output(true, led_pin).unwrap();
     gpio0.enable_input(true, btn_pin).unwrap();
 

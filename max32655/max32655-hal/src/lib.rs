@@ -73,3 +73,9 @@ pub use wdt as WDT;
 
 pub mod wut;
 pub use wut as WUT;
+
+pub mod mxc_error;
+pub use mxc_error as MxcError;
+
+pub mod common;
+pub use common as Common;

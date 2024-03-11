@@ -1,10 +1,12 @@
 use crate::pac;
+use crate::MxcError;
 use crate::Sys;
+use crate::common::BitOrder;
 
-pub enum AdcError {
-    Overflow,
-}
+use BitOrder as DataAlignment;
 
+#[repr(u8)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Chan {
     AIN0,
     AIN1,
@@ -15,18 +17,36 @@ pub enum Chan {
     AIN6,
     AIN7,
     VCOREA,
-    VCOREb,
+    VCOREB,
     VRXOUT,
     VTXOUT,
     VDDDA,
-    VDDIO4 = 14,
+    VDDIO4,
     VDDIOH4,
     VREGI4,
 }
-
-pub enum DataAlignment {
-    LSB,
-    MSB,
+impl From<u8> for Chan {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => Chan::AIN0,
+            1 => Chan::AIN1,
+            2 => Chan::AIN2,
+            3 => Chan::AIN3,
+            4 => Chan::AIN4,
+            5 => Chan::AIN5,
+            6 => Chan::AIN6,
+            7 => Chan::AIN7,
+            8 => Chan::VCOREA,
+            9 => Chan::VCOREB,
+            10 => Chan::VRXOUT,
+            11 => Chan::VTXOUT,
+            12 => Chan::VDDDA,
+            14 => Chan::VDDIO4,
+            15 => Chan::VDDIOH4,
+            16 => Chan::VREGI4,
+            _ => panic!("Invalid value for conversion to YourEnum"),
+        }
+    }
 }
 
 pub enum RefSel {
@@ -34,7 +54,12 @@ pub enum RefSel {
     VDD2,
 }
 
-pub enum AdcFlags {}
+pub enum ExtScale {
+    DivNone,
+    Div2,
+    Div3,
+    Div4,
+}
 
 pub trait Adc {
     fn init(&mut self);
@@ -47,16 +72,18 @@ pub trait Adc {
     fn get_conversion_speed(&mut self) -> u32;
     fn set_data_alignment(&mut self, alignment: DataAlignment);
     fn get_data_alignment(&self) -> DataAlignment;
-    fn set_ext_scale(&mut self);
+    fn set_ext_scale(&mut self, scale: ExtScale);
     fn set_reference(&mut self, refsel: RefSel);
     fn set_channel(&mut self, channel: Chan);
+    fn get_channel(&self) -> Chan;
+
     fn start_conversion(&self);
-    fn get_conversion(&self) -> Result<u16, AdcError>;
+    fn get_conversion(&self) -> Result<u16, MxcError::Error>;
 
     fn wait_until_not_busy(&mut self) {
         while self.is_busy() {}
     }
-    fn read_sync(&mut self, channel: Chan) -> Result<u16, AdcError> {
+    fn read_sync(&mut self, channel: Chan) -> Result<u16, MxcError::Error> {
         self.set_channel(channel);
         self.start_conversion();
         self.wait_until_not_busy();
@@ -121,8 +148,27 @@ impl Adc for pac::ADC {
         }
     }
 
-    fn set_ext_scale(&mut self) {
-        todo!()
+    fn set_ext_scale(&mut self, scale: ExtScale) {
+        let option = match scale {
+            ExtScale::DivNone => 0,
+            ExtScale::Div2 => 1,
+            ExtScale::Div3 => 2,
+            ExtScale::Div4 => 3,
+        };
+
+        self.ctrl.write(|w| w.adc_divsel().bits(option));
+
+        // EXT Scale does not take effect until channel changes.
+        // So swap and then put it back
+        let current_channel = self.get_channel();
+
+        if current_channel == Chan::AIN0 {
+            self.set_channel(Chan::AIN1);
+            self.set_channel(current_channel)
+        } else {
+            self.set_channel(Chan::AIN0);
+            self.set_channel(current_channel);
+        }
     }
     fn set_reference(&mut self, refsel: RefSel) {
         self.ctrl.write(|w| match refsel {
@@ -136,12 +182,17 @@ impl Adc for pac::ADC {
             w.ch_sel().bits(channel as u8)
         });
     }
+
+    fn get_channel(&self) -> Chan {
+        self.ctrl.read().ch_sel().bits().into()
+    }
+
     fn start_conversion(&self) {
         self.ctrl.write(|w| w.start().set_bit());
     }
-    fn get_conversion(&self) -> Result<u16, AdcError> {
+    fn get_conversion(&self) -> Result<u16, MxcError::Error> {
         if self.status.read().overflow().bit_is_set() {
-            return Err(AdcError::Overflow);
+            return Err(MxcError::Error::Overflow);
         }
 
         let data = self.data.read().bits() as u16;

@@ -1,5 +1,9 @@
-use crate::pac;
+use pac::gcr::clkctrl::CLKCTRL_SPEC;
 
+use crate::pac;
+use crate::MxcError::Error;
+
+#[derive(Clone, Copy)]
 pub enum PeriphClock {
     GPIO0,
     GPIO1,
@@ -28,6 +32,8 @@ pub enum PeriphClock {
     WDT0,
     CPU1,
 }
+#[derive(Clone, Copy)]
+
 pub enum PeriphRst {
     DMA,
     WDT0,
@@ -156,6 +162,7 @@ pub fn periph_clock_is_enabled(clk: PeriphClock) -> bool {
 pub fn get_revision() -> u32 {
     steal_gcr().revision.read().bits()
 }
+#[derive(Clone, Copy)]
 
 pub enum CoreClockSource {
     ISO,
@@ -238,3 +245,53 @@ pub fn periph_reset(periph: PeriphRst) {
         PeriphRst::CPU1 => set_bit(1, 21),
     }
 }
+
+fn is_clk_ready(gcr: &pac::GCR, clock: &CoreClockSource) -> bool {
+    let clkctrl = &gcr.clkctrl;
+
+    match clock {
+        CoreClockSource::ISO => clkctrl.read().iso_rdy().bit_is_set(),
+        CoreClockSource::ERFO => clkctrl.read().erfo_rdy().bit_is_set(),
+        CoreClockSource::IPO => clkctrl.read().ipo_rdy().bit_is_set(),
+        CoreClockSource::IBRO => clkctrl.read().ibro_rdy().bit_is_set(),
+        CoreClockSource::ERTCO => clkctrl.read().ertco_rdy().bit_is_set(),
+        _ => true, // Default case
+    }
+}
+
+const TIMEOUT_COUNT: i32 = 1_000_000;
+fn clock_timeout(clock: CoreClockSource) -> Result<(), Error> {
+    let gcr = steal_gcr();
+
+    let mut timeout_count = TIMEOUT_COUNT;
+    let mut clk_rdy = false;
+
+    while !clk_rdy && timeout_count > 0 {
+        clk_rdy = is_clk_ready(&gcr, &clock);
+        timeout_count -= 1;
+    }
+
+    if clk_rdy {
+        Ok(())
+    } else {
+        Err(Error::Timeout)
+    }
+}
+
+pub fn enable_core_clock(clock: CoreClockSource) -> Result<(), Error> {
+    let gcr = steal_gcr();
+    use CoreClockSource as src;
+
+    gcr.clkctrl.write(|w| match clock {
+        src::ISO => w.iso_en().set_bit(),
+        src::ERFO => w.erfo_en().set_bit(),
+        src::IPO => w.ipo_en().set_bit(),
+        src::IBRO => w.ibro_en().set_bit(),
+        src::ERTCO => w.ertco_en().set_bit(),
+        src::EXTCLK => w,
+        _ => w,
+    });
+
+    clock_timeout(clock)
+}
+pub fn disable_core_clock(clock: CoreClockSource) {}

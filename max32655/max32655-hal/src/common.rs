@@ -1,5 +1,4 @@
-
-pub enum BitOrder{
+pub enum BitOrder {
     LSB,
-    MSB
+    MSB,
 }

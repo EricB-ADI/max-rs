@@ -1,7 +1,7 @@
+use crate::common::BitOrder;
 use crate::pac;
 use crate::MxcError;
 use crate::Sys;
-use crate::common::BitOrder;
 
 use BitOrder as DataAlignment;
 

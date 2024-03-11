@@ -1,6 +1,6 @@
+use crate::common::BitOrder;
 use crate::pac;
 use crate::Sys;
-use crate::common::BitOrder;
 
 pub trait Crc {
     fn init(&mut self);

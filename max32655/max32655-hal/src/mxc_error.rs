@@ -1,5 +1,6 @@
 #[derive(Debug, PartialEq, Eq)]
 pub enum Error {
+    Success,
     NoDevice,
     BadParam,
     Invalid,
@@ -8,6 +9,7 @@ pub enum Error {
     BadState,
     Unknown,
     CommErr,
+    Timeout,
     NoResponse,
     Overflow,
     Underflow,

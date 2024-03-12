@@ -1,3 +1,4 @@
+use crate::gcr::steal_gcr;
 use crate::pac;
 use crate::MxcError::Error;
 
@@ -114,10 +115,6 @@ impl PeriphClock {
             PeriphClock::CPU1 => PclkDisBank::new(Bank::Bank1, 31),
         }
     }
-}
-
-fn steal_gcr() -> pac::GCR {
-    unsafe { pac::Peripherals::steal().GCR }
 }
 
 pub fn periph_clock_disable(clk: PeriphClock) {

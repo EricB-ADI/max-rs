@@ -1,5 +1,3 @@
-use pac::gcr::clkctrl::CLKCTRL_SPEC;
-
 use crate::pac;
 use crate::MxcError::Error;
 
@@ -162,17 +160,41 @@ pub fn periph_clock_is_enabled(clk: PeriphClock) -> bool {
 pub fn get_revision() -> u32 {
     steal_gcr().revision.read().bits()
 }
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 
 pub enum CoreClockSource {
     ISO,
-    Reserved,
     ERFO,
     INRO,
     IPO,
     IBRO,
     ERTCO,
     EXTCLK,
+}
+type ClkFreq = u32;
+
+impl CoreClockSource {
+    pub fn get_clock_freq(&self) -> ClkFreq {
+        match self {
+            CoreClockSource::IPO => 100_000_000,
+            CoreClockSource::ISO => 60_000_000,
+            CoreClockSource::ERFO => 32_000_000,
+            CoreClockSource::IBRO => 7_372_800,
+            CoreClockSource::ERTCO => 32_768,
+            CoreClockSource::INRO => get_inro_freq(),
+            CoreClockSource::EXTCLK => get_ext_clock_freq(),
+        }
+    }
+}
+
+pub trait PeriphClockFreq {
+    fn into_periph_clock_freq(&self) -> u32;
+}
+
+impl PeriphClockFreq for u32 {
+    fn into_periph_clock_freq(&self) -> u32 {
+        *self / 2
+    }
 }
 
 pub fn get_clock_source() -> CoreClockSource {
@@ -182,14 +204,14 @@ pub fn get_clock_source() -> CoreClockSource {
 
     match gcr.clkctrl.read().sysclk_sel().bits() {
         0 => src::ISO,
-        1 => src::Reserved,
         2 => src::ERFO,
         3 => src::INRO,
         4 => src::IPO,
         5 => src::IBRO,
         6 => src::ERTCO,
         7 => src::EXTCLK,
-        _ => src::ISO,
+        8 => src::ISO,
+        _ => panic!("Invalid Clock Selection"),
     }
 }
 
@@ -294,4 +316,35 @@ pub fn enable_core_clock(clock: CoreClockSource) -> Result<(), Error> {
 
     clock_timeout(clock)
 }
-pub fn disable_core_clock(clock: CoreClockSource) {}
+
+pub fn get_inro_freq() -> u32 {
+    let sir = unsafe { crate::pac::Peripherals::steal().TRIMSIR };
+    let clksel = sir.inro.read().lpclksel();
+
+    if clksel.is_30khz() {
+        30_000
+    } else if clksel.is_16khz() {
+        16_000
+    } else {
+        8_000
+    }
+}
+pub fn get_ext_clock_freq() -> u32 {
+    48_000_000
+}
+
+pub fn get_core_clock_freq(clock: CoreClockSource) -> u32 {
+    match clock {
+        CoreClockSource::IPO => 100_000_000,
+        CoreClockSource::ISO => 60_000_000,
+        CoreClockSource::ERFO => 32_000_000,
+        CoreClockSource::IBRO => 7_372_800,
+        CoreClockSource::ERTCO => 32_768,
+        CoreClockSource::INRO => get_inro_freq(),
+        CoreClockSource::EXTCLK => get_ext_clock_freq(),
+    }
+}
+
+pub fn get_periph_clock_freq(clock: CoreClockSource) -> u32 {
+    get_core_clock_freq(clock) / 2
+}

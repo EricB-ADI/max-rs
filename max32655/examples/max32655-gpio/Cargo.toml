@@ -12,6 +12,8 @@ cortex-m-rt = "0.6.10"
 cortex-m-semihosting = "0.3.3"
 panic-halt = "0.2.0"
 max32655_pac = { path = "../../max32655_pac", features = ["rt", "critical-section"] }
+max32655-hal = { path = "../../max32655-hal"}
+
 # critical-section = { version = "1.1", features = ["custom-impl"]}
 
 

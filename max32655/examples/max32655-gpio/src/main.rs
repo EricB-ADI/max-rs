@@ -1,42 +1,33 @@
 #![no_std]
 #![no_main]
 
-// pick a panicking behavior
-use panic_halt as _; // you can put a breakpoint on `rust_begin_unwind` to catch panics
-                     // use panic_abort as _; // requires nightly
-                     // use panic_itm as _; // logs messages over ITM; requires ITM support
-                     // use panic_semihosting as _; // logs messages to the host stderr; requires a debugger
-
-use cortex_m::asm;
 use cortex_m_rt::entry;
+use hal::{Sys, GPIO::GpioPort};
+use max32655_hal as hal;
 use max32655_pac::Peripherals;
+use panic_halt as _;
 
 #[entry]
 fn main() -> ! {
-    let pin: u32 = 1 << 24;
+    let led_pin: u8 = 24;
+    let btn_pin: u8 = 18;
+
     let per = Peripherals::take().unwrap();
-    let gcr = per.GCR;
-    let gpio0 = per.GPIO0;
+    let mut gpio0 = per.GPIO0;
 
-    //enable gpio clock
-    gcr.pclkdis0.write(|w| w.gpio0().clear_bit());
+    Sys::periph_reset(Sys::PeriphRst::GPIO0);
+    Sys::periph_clock_enable(Sys::PeriphClock::GPIO0);
 
-    //enable gpio and configure at output
-    gpio0.en0_set.write(|w| unsafe { w.bits(pin) });
-
-    gpio0.outen_set.write(|w| unsafe { w.bits(pin) });
-
-    gpio0
-        .padctrl0
-        .modify(|r, w| unsafe { w.bits(r.bits() | pin) });
-    gpio0
-        .padctrl1
-        .modify(|r, w| unsafe { w.bits(r.bits() | pin) });
+    gpio0.enable_output(true, led_pin).unwrap();
+    gpio0.enable_input(true, btn_pin).unwrap();
 
     loop {
-        gpio0.out_set.write(|w| unsafe { w.bits(pin) });
-        asm::delay(100_000);
-        gpio0.out_clr.write(|w| unsafe { w.bits(pin) });
-        asm::delay(100_000);
+        let input = gpio0.read(btn_pin).unwrap();
+
+        if input {
+            gpio0.set_high(led_pin).unwrap();
+        } else {
+            gpio0.set_low(led_pin).unwrap();
+        }
     }
 }
